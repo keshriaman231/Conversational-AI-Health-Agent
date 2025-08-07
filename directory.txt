@@ -1,6 +1,6 @@
-<--------------- # DL Model <-> AI Agent directory ----------------->
+<--------------- # DL Model -> AI Agent directory ----------------->
 
-ai-disease-detection/
+ai-agent/
 │
 ├── backend/
 │   ├── app.py                    # Flask main app
@@ -17,12 +17,7 @@ ai-disease-detection/
 │   ├── requirements.txt           # Backend dependencies
 │   └── database/
 │       ├── db.py                  # Database functions
-│
-├── frontend/
-│   ├── streamlit_app.py           # Streamlit app
-│   ├── requirements.txt           # Frontend dependencies
-│   
-│
+|
 │
 ├── colab_training/
 │   ├── train_model.ipynb    # DL training notebook
