@@ -8,5 +8,5 @@ numpy
 streamlit
 requests
 langchain
-langchain-groq
+langchain-google-genai
 google-generativeai
