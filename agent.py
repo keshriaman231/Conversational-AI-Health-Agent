@@ -293,9 +293,15 @@ llm = ChatGroq(temperature=0, model_name="llama3-8b-8192")
 # --- 5. Define the Tool (No changes needed inside the tool logic) ---
 @tool
 def disease_prediction_tool(natural_language_symptoms: str) -> str:
-    # This entire function remains the same as before
+    """
+    This is the primary tool. Use it when a user describes their health symptoms in natural language.
+    This tool will convert the sentence into a full symptom list and get a prediction.
+    The input should be the user's description of their symptoms as a single string.
+    """
     print(f"🤖 Tool received natural language input: '{natural_language_symptoms}'")
     
+    # ... all the other code inside the function should remain exactly as it was ...
+    # from the "symptom_extractor_prompt" line onwards.
     symptom_extractor_prompt = PromptTemplate.from_template(
         """
         You are a highly specialized function. Your ONLY job is to identify which symptoms a user has based on their description.
