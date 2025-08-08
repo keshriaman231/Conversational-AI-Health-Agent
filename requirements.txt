@@ -1,7 +1,7 @@
 # updated requirements.txt
 
 flask
-tensorflow
+tensorflow-cpu
 scikit-learn
 joblib
 numpy
