@@ -368,7 +368,7 @@
 # agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
 # '''
 
-# agent.py (Final, Most Direct Version)
+# agent.py (Final, Most Compatible Version)
 
 import os
 import re
@@ -379,7 +379,8 @@ import numpy as np
 import streamlit as st
 from tensorflow.keras.models import load_model
 from langchain_groq import ChatGroq
-from langchain.agents import tool, AgentExecutor, create_react_agent
+from langchain.agents import tool, AgentExecutor, initialize_agent # IMPORT THE NEW INITIALIZER
+from langchain.agents import AgentType
 from langchain_core.prompts import PromptTemplate
 
 # --- 1. SET YOUR GROQ API KEY FROM STREAMLIT SECRETS ---
@@ -443,4 +444,24 @@ def disease_prediction_tool(natural_language_symptoms: str) -> str:
 
     try:
         input_array = np.array(symptoms_list).reshape(1, -1)
-        input_scaled = scaler
+        input_scaled = scaler.transform(input_array)
+        prediction_probabilities = keras_model.predict(input_scaled)
+        predicted_index = np.argmax(prediction_probabilities[0])
+        confidence = float(np.max(prediction_probabilities[0]))
+        predicted_disease = label_encoder.inverse_transform([predicted_index])[0]
+        return f"Prediction successful. Predicted Disease: {predicted_disease}, Confidence: {confidence * 100:.2f}%."
+    except Exception as e:
+        return f"An error occurred during prediction: {str(e)}"
+
+# --- 6. Create the Final Agent (Using the Most Compatible Method) ---
+tools = [disease_prediction_tool]
+
+# We use the initialize_agent function which is more robust
+agent_executor = initialize_agent(
+    tools,
+    llm,
+    agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION,
+    verbose=True,
+    handle_parsing_errors=True,
+    max_iterations=3
+)
