@@ -1,6 +1,6 @@
 # requirements.txt
 
-flask
+'''flask
 tensorflow
 scikit-learn
 joblib
@@ -9,4 +9,17 @@ streamlit
 requests
 langchain
 langchain-google-genai
+google-generativeai'''
+
+# updated requirements.txt
+
+flask
+tensorflow
+scikit-learn
+joblib
+numpy
+streamlit
+requests
+langchain
+langchain-groq
 google-generativeai
