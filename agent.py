@@ -1,254 +1,374 @@
-'''#result optimization
+# '''#result optimization
 
-# agent.py (Definitive Final Version)
+# # agent.py (Definitive Final Version)
 
-import os
-import requests
-import json
-import re
-import ast # Import the 'ast' library
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import tool, AgentExecutor, create_react_agent
-from langchain_core.prompts import PromptTemplate
+# import os
+# import requests
+# import json
+# import re
+# import ast # Import the 'ast' library
+# from langchain_google_genai import ChatGoogleGenerativeAI
+# from langchain.agents import tool, AgentExecutor, create_react_agent
+# from langchain_core.prompts import PromptTemplate
 
-# --- 1. SET YOUR GOOGLE API KEY ---
-# Make sure your API key is set correctly here
-os.environ["GOOGLE_API_KEY"] = "AIzaSyBNyAdwvlPq2D8fvHGA-r3n3a8qGBEB4iM"
+# # --- 1. SET YOUR GOOGLE API KEY ---
+# # Make sure your API key is set correctly here
+# os.environ["GOOGLE_API_KEY"] = "AIzaSyBNyAdwvlPq2D8fvHGA-r3n3a8qGBEB4iM"
 
-# --- 2. Load the features list ---
-features_path = os.path.join('backend', 'model', 'features.json')
-with open(features_path, 'r') as f:
-    FEATURES = json.load(f)
+# # --- 2. Load the features list ---
+# features_path = os.path.join('backend', 'model', 'features.json')
+# with open(features_path, 'r') as f:
+#     FEATURES = json.load(f)
 
-# --- 3. Initialize the LLM ---
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
+# # --- 3. Initialize the LLM ---
+# llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
 
-# --- 4. Define the FINAL, MOST ROBUST Tool ---
-@tool
-def disease_prediction_tool(natural_language_symptoms: str) -> str:
-    """
-    This is the primary tool. Use it when a user describes their health symptoms in natural language.
-    This tool will convert the sentence into a full symptom list and get a prediction.
-    The input should be the user's description of their symptoms as a single string.
-    """
-    print(f"🤖 Tool received natural language input: '{natural_language_symptoms}'")
+# # --- 4. Define the FINAL, MOST ROBUST Tool ---
+# @tool
+# def disease_prediction_tool(natural_language_symptoms: str) -> str:
+#     """
+#     This is the primary tool. Use it when a user describes their health symptoms in natural language.
+#     This tool will convert the sentence into a full symptom list and get a prediction.
+#     The input should be the user's description of their symptoms as a single string.
+#     """
+#     print(f"🤖 Tool received natural language input: '{natural_language_symptoms}'")
     
-    symptom_extractor_prompt = PromptTemplate.from_template(
-        """
-        You are a highly specialized function. Your ONLY job is to identify which symptoms a user has based on their description.
-        Given the user's symptoms: "{user_symptoms}"
-        And the complete list of 132 possible features: {all_features}
+#     symptom_extractor_prompt = PromptTemplate.from_template(
+#         """
+#         You are a highly specialized function. Your ONLY job is to identify which symptoms a user has based on their description.
+#         Given the user's symptoms: "{user_symptoms}"
+#         And the complete list of 132 possible features: {all_features}
 
-        Return a Python list of strings containing ONLY the names of the features the user mentioned.
-        For example: ["headache", "cough", "high_fever"]
-        The final output MUST be ONLY the Python list of strings and absolutely nothing else.
-        """
-    )
+#         Return a Python list of strings containing ONLY the names of the features the user mentioned.
+#         For example: ["headache", "cough", "high_fever"]
+#         The final output MUST be ONLY the Python list of strings and absolutely nothing else.
+#         """
+#     )
     
-    symptom_chain = symptom_extractor_prompt | llm
+#     symptom_chain = symptom_extractor_prompt | llm
     
-    print("🧠 Extracting symptom names from the sentence...")
-    list_of_names_str = symptom_chain.invoke({
-        "user_symptoms": natural_language_symptoms,
-        "all_features": ", ".join(FEATURES)
-    }).content
+#     print("🧠 Extracting symptom names from the sentence...")
+#     list_of_names_str = symptom_chain.invoke({
+#         "user_symptoms": natural_language_symptoms,
+#         "all_features": ", ".join(FEATURES)
+#     }).content
 
-    print(f"⚙️ LLM returned symptom names: {list_of_names_str}")
+#     print(f"⚙️ LLM returned symptom names: {list_of_names_str}")
 
-    # --- THIS IS THE CORRECTED PARSING LOGIC ---
-    try:
-        # Use a more robust method to find the list in the string
-        cleaned_str_match = re.search(r'\[.*\]', list_of_names_str, re.DOTALL)
-        if not cleaned_str_match:
-             return "Error: The AI failed to generate a recognizable symptom list format."
-        cleaned_str = cleaned_str_match.group(0)
+#     # --- THIS IS THE CORRECTED PARSING LOGIC ---
+#     try:
+#         # Use a more robust method to find the list in the string
+#         cleaned_str_match = re.search(r'\[.*\]', list_of_names_str, re.DOTALL)
+#         if not cleaned_str_match:
+#              return "Error: The AI failed to generate a recognizable symptom list format."
+#         cleaned_str = cleaned_str_match.group(0)
 
-        # Use ast.literal_eval instead of json.loads to handle single quotes
-        symptoms_present = ast.literal_eval(cleaned_str)
+#         # Use ast.literal_eval instead of json.loads to handle single quotes
+#         symptoms_present = ast.literal_eval(cleaned_str)
 
-        symptoms_list = [0] * 132
-        for i, feature in enumerate(FEATURES):
-            if feature in symptoms_present:
-                symptoms_list[i] = 1
+#         symptoms_list = [0] * 132
+#         for i, feature in enumerate(FEATURES):
+#             if feature in symptoms_present:
+#                 symptoms_list[i] = 1
         
-        print(f"✅ Successfully built binary list. Found {sum(symptoms_list)} symptoms.")
+#         print(f"✅ Successfully built binary list. Found {sum(symptoms_list)} symptoms.")
 
-    except Exception as e:
-        return f"Error: Could not parse the symptom names generated by the AI. Details: {e}"
+#     except Exception as e:
+#         return f"Error: Could not parse the symptom names generated by the AI. Details: {e}"
 
-    # --- Internal Step C: Call your backend API with the generated list ---
-    print(f"📞 Calling the backend API...")
-    api_url = "http://127.0.0.1:5000/predict"
-    payload = {"symptoms": symptoms_list}
+#     # --- Internal Step C: Call your backend API with the generated list ---
+#     print(f"📞 Calling the backend API...")
+#     api_url = "http://127.0.0.1:5000/predict"
+#     payload = {"symptoms": symptoms_list}
     
-    try:
-        response = requests.post(api_url, json=payload)
-        if response.status_code == 200:
-            result = response.json()
-            return f"Prediction successful. Predicted Disease: {result['prediction']}, Confidence: {result['confidence']}%."
-        else:
-            return f"API call failed with status code {response.status_code}. Error: {response.text}"
-    except Exception as e:
-        return f"An exception occurred while calling the API: {str(e)}"
+#     try:
+#         response = requests.post(api_url, json=payload)
+#         if response.status_code == 200:
+#             result = response.json()
+#             return f"Prediction successful. Predicted Disease: {result['prediction']}, Confidence: {result['confidence']}%."
+#         else:
+#             return f"API call failed with status code {response.status_code}. Error: {response.text}"
+#     except Exception as e:
+#         return f"An exception occurred while calling the API: {str(e)}"
 
-# --- 5. Create the Final Agent ---
-tools = [disease_prediction_tool]
+# # --- 5. Create the Final Agent ---
+# tools = [disease_prediction_tool]
 
-agent_prompt = PromptTemplate.from_template(
-    """
-    You are a helpful AI health assistant. Your job is to understand the user's symptoms and use a tool to analyze them.
+# agent_prompt = PromptTemplate.from_template(
+#     """
+#     You are a helpful AI health assistant. Your job is to understand the user's symptoms and use a tool to analyze them.
 
-    You have access to the following tools:
-    {tools}
+#     You have access to the following tools:
+#     {tools}
 
-    To use a tool, you must use the following format:
+#     To use a tool, you must use the following format:
 
-    Thought: Do I need to use a tool? Yes. The user has described their symptoms.
-    Action: The action to take, which should be one of [{tool_names}]
-    Action Input: The user's original, natural language description of their symptoms.
-    Observation: The result of the action.
+#     Thought: Do I need to use a tool? Yes. The user has described their symptoms.
+#     Action: The action to take, which should be one of [{tool_names}]
+#     Action Input: The user's original, natural language description of their symptoms.
+#     Observation: The result of the action.
 
-    After using the tool and getting an observation, you will have the final answer.
-    CRITICAL: ALWAYS end your final answer by advising the user to consult a professional doctor for a real diagnosis.
+#     After using the tool and getting an observation, you will have the final answer.
+#     CRITICAL: ALWAYS end your final answer by advising the user to consult a professional doctor for a real diagnosis.
 
-    Begin!
+#     Begin!
 
-    User's message: {input}
-    Thought:{agent_scratchpad}
-    """
-)
+#     User's message: {input}
+#     Thought:{agent_scratchpad}
+#     """
+# )
 
-agent = create_react_agent(llm, tools, agent_prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)'''
+# agent = create_react_agent(llm, tools, agent_prompt)
+# agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)'''
 
 
-'''# agent.py (Final Self-Contained Version for Deployment)
+# '''# agent.py (Final Self-Contained Version for Deployment)
 
-import os
-import re
-import ast
-import json
-import joblib
-import numpy as np
-import streamlit as st # Import Streamlit
-from tensorflow.keras.models import load_model # Import Keras
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.agents import tool, AgentExecutor, create_react_agent
-from langchain_core.prompts import PromptTemplate
+# import os
+# import re
+# import ast
+# import json
+# import joblib
+# import numpy as np
+# import streamlit as st # Import Streamlit
+# from tensorflow.keras.models import load_model # Import Keras
+# from langchain_google_genai import ChatGoogleGenerativeAI
+# from langchain.agents import tool, AgentExecutor, create_react_agent
+# from langchain_core.prompts import PromptTemplate
 
-# --- 1. SET YOUR GOOGLE API KEY FROM STREAMLIT SECRETS ---
-# The app will now securely get the key from the Secrets you just set.
-# os.environ["GOOGLE_API_KEY"] = st.secrets["AIzaSyBNyAdwvlPq2D8fvHGA-r3n3a8qGBEB4iM"]
-os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
+# # --- 1. SET YOUR GOOGLE API KEY FROM STREAMLIT SECRETS ---
+# # The app will now securely get the key from the Secrets you just set.
+# # os.environ["GOOGLE_API_KEY"] = st.secrets["AIzaSyBNyAdwvlPq2D8fvHGA-r3n3a8qGBEB4iM"]
+# os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
 
-# --- 2. LOAD ALL ML MODELS (MOVED FROM FLASK) ---
-# This function loads your Keras model and preprocessors.
-@st.cache_resource
-def load_prediction_models():
-    print("🧠 Loading prediction models...")
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    model_dir = os.path.join(base_dir, 'backend', 'model')
+# # --- 2. LOAD ALL ML MODELS (MOVED FROM FLASK) ---
+# # This function loads your Keras model and preprocessors.
+# @st.cache_resource
+# def load_prediction_models():
+#     print("🧠 Loading prediction models...")
+#     base_dir = os.path.dirname(os.path.abspath(__file__))
+#     model_dir = os.path.join(base_dir, 'backend', 'model')
     
-    model = load_model(os.path.join(model_dir, 'disease_model.h5'))
-    scaler = joblib.load(os.path.join(model_dir, 'scaler.pkl'))
-    label_encoder = joblib.load(os.path.join(model_dir, 'label_encoder.pkl'))
-    print("✅ Prediction models loaded successfully!")
-    return model, scaler, label_encoder
+#     model = load_model(os.path.join(model_dir, 'disease_model.h5'))
+#     scaler = joblib.load(os.path.join(model_dir, 'scaler.pkl'))
+#     label_encoder = joblib.load(os.path.join(model_dir, 'label_encoder.pkl'))
+#     print("✅ Prediction models loaded successfully!")
+#     return model, scaler, label_encoder
 
-keras_model, scaler, label_encoder = load_prediction_models()
+# keras_model, scaler, label_encoder = load_prediction_models()
 
-# --- 3. Load the features list ---
-features_path = os.path.join('backend', 'model', 'features.json')
-with open(features_path, 'r') as f:
-    FEATURES = json.load(f)
+# # --- 3. Load the features list ---
+# features_path = os.path.join('backend', 'model', 'features.json')
+# with open(features_path, 'r') as f:
+#     FEATURES = json.load(f)
 
-# --- 4. Initialize the LLM ---
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
+# # --- 4. Initialize the LLM ---
+# llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
 
-# --- 5. Define the FINAL Tool (Calls a Local Function) ---
-@tool
-def disease_prediction_tool(natural_language_symptoms: str) -> str:
-    """
-    This is the primary tool. Use it when a user describes their health symptoms in natural language.
-    The input should be the user's description of their symptoms as a single string.
-    """
-    print(f"🤖 Tool received natural language input: '{natural_language_symptoms}'")
+# # --- 5. Define the FINAL Tool (Calls a Local Function) ---
+# @tool
+# def disease_prediction_tool(natural_language_symptoms: str) -> str:
+#     """
+#     This is the primary tool. Use it when a user describes their health symptoms in natural language.
+#     The input should be the user's description of their symptoms as a single string.
+#     """
+#     print(f"🤖 Tool received natural language input: '{natural_language_symptoms}'")
     
-    # ... (Symptom extraction logic remains the same)
-    symptom_extractor_prompt = PromptTemplate.from_template(
-        """
-        You are a highly specialized function... (rest of the prompt is the same)
-        """
-    )
-    symptom_chain = symptom_extractor_prompt | llm
-    list_of_names_str = symptom_chain.invoke({
-        "user_symptoms": natural_language_symptoms, "all_features": ", ".join(FEATURES)
-    }).content
+#     # ... (Symptom extraction logic remains the same)
+#     symptom_extractor_prompt = PromptTemplate.from_template(
+#         """
+#         You are a highly specialized function... (rest of the prompt is the same)
+#         """
+#     )
+#     symptom_chain = symptom_extractor_prompt | llm
+#     list_of_names_str = symptom_chain.invoke({
+#         "user_symptoms": natural_language_symptoms, "all_features": ", ".join(FEATURES)
+#     }).content
     
-    try:
-        cleaned_str_match = re.search(r'\[.*\]', list_of_names_str, re.DOTALL)
-        if not cleaned_str_match:
-             return "Error: The AI failed to generate a recognizable symptom list format."
-        cleaned_str = cleaned_str_match.group(0)
-        symptoms_present = ast.literal_eval(cleaned_str)
-        symptoms_list = [0] * 132
-        for i, feature in enumerate(FEATURES):
-            if feature in symptoms_present:
-                symptoms_list[i] = 1
-    except Exception as e:
-        return f"Error: Could not parse symptom names. Details: {e}"
+#     try:
+#         cleaned_str_match = re.search(r'\[.*\]', list_of_names_str, re.DOTALL)
+#         if not cleaned_str_match:
+#              return "Error: The AI failed to generate a recognizable symptom list format."
+#         cleaned_str = cleaned_str_match.group(0)
+#         symptoms_present = ast.literal_eval(cleaned_str)
+#         symptoms_list = [0] * 132
+#         for i, feature in enumerate(FEATURES):
+#             if feature in symptoms_present:
+#                 symptoms_list[i] = 1
+#     except Exception as e:
+#         return f"Error: Could not parse symptom names. Details: {e}"
 
-    # --- THIS IS THE NEW PART: CALL THE LOCAL MODEL ---
-    print(f"📞 Calling the local Keras model...")
-    try:
-        input_array = np.array(symptoms_list).reshape(1, -1)
-        input_scaled = scaler.transform(input_array)
-        prediction_probabilities = keras_model.predict(input_scaled)
-        predicted_index = np.argmax(prediction_probabilities[0])
-        confidence = float(np.max(prediction_probabilities[0]))
-        predicted_disease = label_encoder.inverse_transform([predicted_index])[0]
+#     # --- THIS IS THE NEW PART: CALL THE LOCAL MODEL ---
+#     print(f"📞 Calling the local Keras model...")
+#     try:
+#         input_array = np.array(symptoms_list).reshape(1, -1)
+#         input_scaled = scaler.transform(input_array)
+#         prediction_probabilities = keras_model.predict(input_scaled)
+#         predicted_index = np.argmax(prediction_probabilities[0])
+#         confidence = float(np.max(prediction_probabilities[0]))
+#         predicted_disease = label_encoder.inverse_transform([predicted_index])[0]
         
-        return f"Prediction successful. Predicted Disease: {predicted_disease}, Confidence: {confidence * 100:.2f}%."
-    except Exception as e:
-        return f"An error occurred during prediction: {str(e)}"
+#         return f"Prediction successful. Predicted Disease: {predicted_disease}, Confidence: {confidence * 100:.2f}%."
+#     except Exception as e:
+#         return f"An error occurred during prediction: {str(e)}"
 
-# --- 6. Create the Final Agent ---
-# agent.py
+# # --- 6. Create the Final Agent ---
+# # agent.py
 
-# ... (all the code above this section is correct) ...
+# # ... (all the code above this section is correct) ...
 
-# --- 5. Create the Final Agent (WITH THE CORRECTED PROMPT) ---
-tools = [disease_prediction_tool]
-agent_prompt = PromptTemplate.from_template(
-    """
-    You are a helpful AI health assistant. Your job is to understand the user's symptoms and use a tool to analyze them.
+# # --- 5. Create the Final Agent (WITH THE CORRECTED PROMPT) ---
+# tools = [disease_prediction_tool]
+# agent_prompt = PromptTemplate.from_template(
+#     """
+#     You are a helpful AI health assistant. Your job is to understand the user's symptoms and use a tool to analyze them.
 
-    You have access to the following tools:
-    {tools}
+#     You have access to the following tools:
+#     {tools}
 
-    To use a tool, you must use the following format:
+#     To use a tool, you must use the following format:
 
-    Thought: Do I need to use a tool? Yes. The user has described their symptoms.
-    Action: The action to take, which should be one of [{tool_names}]
-    Action Input: The user's original, natural language description of their symptoms.
-    Observation: The result of the action.
+#     Thought: Do I need to use a tool? Yes. The user has described their symptoms.
+#     Action: The action to take, which should be one of [{tool_names}]
+#     Action Input: The user's original, natural language description of their symptoms.
+#     Observation: The result of the action.
 
-    After using the tool and getting an observation, you will have the final answer.
-    CRITICAL: ALWAYS end your final answer by advising the user to consult a professional doctor for a real diagnosis.
+#     After using the tool and getting an observation, you will have the final answer.
+#     CRITICAL: ALWAYS end your final answer by advising the user to consult a professional doctor for a real diagnosis.
 
-    Begin!
+#     Begin!
 
-    User's message: {input}
-    Thought:{agent_scratchpad}
-    """
-)
+#     User's message: {input}
+#     Thought:{agent_scratchpad}
+#     """
+# )
 
-agent = create_react_agent(llm, tools, agent_prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)'''
+# agent = create_react_agent(llm, tools, agent_prompt)
+# agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
 
 
 
-# agent.py (Updated to use Groq)
+# # agent.py (Updated to use Groq)
+
+# import os
+# import re
+# import ast
+# import json
+# import joblib
+# import numpy as np
+# import streamlit as st
+# from tensorflow.keras.models import load_model
+# from langchain_groq import ChatGroq # IMPORT THE NEW LIBRARY
+# from langchain.agents import tool, AgentExecutor, create_react_agent
+# from langchain_core.prompts import PromptTemplate
+
+# # --- 1. SET YOUR GROQ API KEY FROM STREAMLIT SECRETS ---
+# # Note: The native Groq library looks for "GROQ_API_KEY"
+# os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+
+# # --- 2. LOAD ALL ML MODELS ---
+# @st.cache_resource
+# def load_prediction_models():
+#     print("🧠 Loading prediction models...")
+#     base_dir = os.path.dirname(os.path.abspath(__file__))
+#     model_dir = os.path.join(base_dir, 'backend', 'model')
+    
+#     model = load_model(os.path.join(model_dir, 'disease_model.h5'))
+#     scaler = joblib.load(os.path.join(model_dir, 'scaler.pkl'))
+#     label_encoder = joblib.load(os.path.join(model_dir, 'label_encoder.pkl'))
+#     print("✅ Prediction models loaded successfully!")
+#     return model, scaler, label_encoder
+
+# keras_model, scaler, label_encoder = load_prediction_models()
+
+# # --- 3. Load the features list ---
+# features_path = os.path.join('backend', 'model', 'features.json')
+# with open(features_path, 'r') as f:
+#     FEATURES = json.load(f)
+
+# # --- 4. Initialize the LLM (SWITCHED TO GROQ) ---
+# # We now use ChatGroq and a model like llama3-8b-8192
+# llm = ChatGroq(temperature=0, model_name="llama3-8b-8192")
+
+# # --- 5. Define the Tool (No changes needed inside the tool logic) ---
+# @tool
+# def disease_prediction_tool(natural_language_symptoms: str) -> str:
+#     """
+#     This is the primary tool. Use it when a user describes their health symptoms in natural language.
+#     This tool will convert the sentence into a full symptom list and get a prediction.
+#     The input should be the user's description of their symptoms as a single string.
+#     """
+#     print(f"🤖 Tool received natural language input: '{natural_language_symptoms}'")
+    
+#     # ... all the other code inside the function should remain exactly as it was ...
+#     # from the "symptom_extractor_prompt" line onwards.
+#     symptom_extractor_prompt = PromptTemplate.from_template(
+#         """
+#         You are a highly specialized function. Your ONLY job is to identify which symptoms a user has based on their description.
+#         Given the user's symptoms: "{user_symptoms}"
+#         And the complete list of 132 possible features: {all_features}
+#         Return a Python list of strings containing ONLY the names of the features the user mentioned.
+#         For example: ["headache", "cough", "high_fever"]
+#         The final output MUST be ONLY the Python list of strings and absolutely nothing else.
+#         """
+#     )
+#     symptom_chain = symptom_extractor_prompt | llm
+#     print("🧠 Extracting symptom names from the sentence...")
+#     list_of_names_str = symptom_chain.invoke({
+#         "user_symptoms": natural_language_symptoms, "all_features": ", ".join(FEATURES)
+#     }).content
+#     print(f"⚙️ LLM returned symptom names: {list_of_names_str}")
+    
+#     try:
+#         cleaned_str_match = re.search(r'\[.*\]', list_of_names_str, re.DOTALL)
+#         if not cleaned_str_match:
+#              return "Error: The AI failed to generate a recognizable symptom list format."
+#         cleaned_str = cleaned_str_match.group(0)
+#         symptoms_present = ast.literal_eval(cleaned_str)
+#         symptoms_list = [0] * 132
+#         for i, feature in enumerate(FEATURES):
+#             if feature in symptoms_present:
+#                 symptoms_list[i] = 1
+#         print(f"✅ Successfully built binary list. Found {sum(symptoms_list)} symptoms.")
+#     except Exception as e:
+#         return f"Error: Could not parse the symptom names generated by the AI. Details: {e}"
+
+#     print(f"📞 Calling the backend API...")
+#     try:
+#         input_array = np.array(symptoms_list).reshape(1, -1)
+#         input_scaled = scaler.transform(input_array)
+#         prediction_probabilities = keras_model.predict(input_scaled)
+#         predicted_index = np.argmax(prediction_probabilities[0])
+#         confidence = float(np.max(prediction_probabilities[0]))
+#         predicted_disease = label_encoder.inverse_transform([predicted_index])[0]
+#         return f"Prediction successful. Predicted Disease: {predicted_disease}, Confidence: {confidence * 100:.2f}%."
+#     except Exception as e:
+#         return f"An error occurred during prediction: {str(e)}"
+
+# # --- 6. Create the Final Agent ---
+# tools = [disease_prediction_tool]
+# agent_prompt = PromptTemplate.from_template(
+#     """
+#     You are a helpful AI health assistant. Your job is to understand the user's symptoms and use a tool to analyze them.
+#     You have access to the following tools:
+#     {tools}
+#     To use a tool, you must use the following format:
+#     Thought: Do I need to use a tool? Yes. The user has described their symptoms.
+#     Action: The action to take, which should be one of [{tool_names}]
+#     Action Input: The user's original, natural language description of their symptoms.
+#     Observation: The result of the action.
+#     After using the tool and getting an observation, you will have the final answer.
+#     CRITICAL: ALWAYS end your final answer by advising the user to consult a professional doctor for a real diagnosis.
+#     Begin!
+#     User's message: {input}
+#     Thought:{agent_scratchpad}
+#     """
+# )
+# agent = create_react_agent(llm, tools, agent_prompt)
+# agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+# '''
+
+# agent.py (Final Corrected Version)
 
 import os
 import re
@@ -258,12 +378,11 @@ import joblib
 import numpy as np
 import streamlit as st
 from tensorflow.keras.models import load_model
-from langchain_groq import ChatGroq # IMPORT THE NEW LIBRARY
-from langchain.agents import tool, AgentExecutor, create_react_agent
+from langchain_groq import ChatGroq
+from langchain.agents import tool, AgentExecutor, create_react_agent # Use create_react_agent
 from langchain_core.prompts import PromptTemplate
 
 # --- 1. SET YOUR GROQ API KEY FROM STREAMLIT SECRETS ---
-# Note: The native Groq library looks for "GROQ_API_KEY"
 os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
 
 # --- 2. LOAD ALL ML MODELS ---
@@ -286,22 +405,18 @@ features_path = os.path.join('backend', 'model', 'features.json')
 with open(features_path, 'r') as f:
     FEATURES = json.load(f)
 
-# --- 4. Initialize the LLM (SWITCHED TO GROQ) ---
-# We now use ChatGroq and a model like llama3-8b-8192
+# --- 4. Initialize the LLM ---
 llm = ChatGroq(temperature=0, model_name="llama3-8b-8192")
 
-# --- 5. Define the Tool (No changes needed inside the tool logic) ---
+# --- 5. Define the Tool ---
 @tool
 def disease_prediction_tool(natural_language_symptoms: str) -> str:
     """
     This is the primary tool. Use it when a user describes their health symptoms in natural language.
-    This tool will convert the sentence into a full symptom list and get a prediction.
     The input should be the user's description of their symptoms as a single string.
     """
     print(f"🤖 Tool received natural language input: '{natural_language_symptoms}'")
     
-    # ... all the other code inside the function should remain exactly as it was ...
-    # from the "symptom_extractor_prompt" line onwards.
     symptom_extractor_prompt = PromptTemplate.from_template(
         """
         You are a highly specialized function. Your ONLY job is to identify which symptoms a user has based on their description.
@@ -333,7 +448,7 @@ def disease_prediction_tool(natural_language_symptoms: str) -> str:
     except Exception as e:
         return f"Error: Could not parse the symptom names generated by the AI. Details: {e}"
 
-    print(f"📞 Calling the backend API...")
+    print(f"📞 Calling the prediction model...")
     try:
         input_array = np.array(symptoms_list).reshape(1, -1)
         input_scaled = scaler.transform(input_array)
@@ -345,24 +460,36 @@ def disease_prediction_tool(natural_language_symptoms: str) -> str:
     except Exception as e:
         return f"An error occurred during prediction: {str(e)}"
 
-# --- 6. Create the Final Agent ---
+# --- 6. Create the Final Agent (Using a More Stable Method) ---
 tools = [disease_prediction_tool]
+
+# A more robust prompt structure for the ReAct agent
 agent_prompt = PromptTemplate.from_template(
     """
     You are a helpful AI health assistant. Your job is to understand the user's symptoms and use a tool to analyze them.
+
     You have access to the following tools:
     {tools}
+
     To use a tool, you must use the following format:
-    Thought: Do I need to use a tool? Yes. The user has described their symptoms.
-    Action: The action to take, which should be one of [{tool_names}]
-    Action Input: The user's original, natural language description of their symptoms.
-    Observation: The result of the action.
-    After using the tool and getting an observation, you will have the final answer.
+
+    Thought: The user has described their symptoms. I should use the available tool to get a prediction.
+    Action: the action to take, should be one of [{tool_names}]
+    Action Input: the user's original description of their symptoms.
+    Observation: the result of the action.
+
+    After getting the result, provide a final answer to the user.
     CRITICAL: ALWAYS end your final answer by advising the user to consult a professional doctor for a real diagnosis.
+
     Begin!
+
     User's message: {input}
     Thought:{agent_scratchpad}
     """
 )
+
+# Use create_react_agent to build the agent
 agent = create_react_agent(llm, tools, agent_prompt)
-agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+
+# Create the executor that will run the agent
+agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True, max_iterations=5)
