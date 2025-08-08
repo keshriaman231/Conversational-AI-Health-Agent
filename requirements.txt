@@ -1,16 +1,3 @@
-# requirements.txt
-
-'''flask
-tensorflow
-scikit-learn
-joblib
-numpy
-streamlit
-requests
-langchain
-langchain-google-genai
-google-generativeai'''
-
 # updated requirements.txt
 
 flask
