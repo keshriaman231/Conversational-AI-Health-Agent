@@ -214,11 +214,35 @@ def disease_prediction_tool(natural_language_symptoms: str) -> str:
         return f"An error occurred during prediction: {str(e)}"
 
 # --- 6. Create the Final Agent ---
+# agent.py
+
+# ... (all the code above this section is correct) ...
+
+# --- 5. Create the Final Agent (WITH THE CORRECTED PROMPT) ---
 tools = [disease_prediction_tool]
 agent_prompt = PromptTemplate.from_template(
     """
-    You are a helpful AI health assistant... (rest of the prompt is the same)
+    You are a helpful AI health assistant. Your job is to understand the user's symptoms and use a tool to analyze them.
+
+    You have access to the following tools:
+    {tools}
+
+    To use a tool, you must use the following format:
+
+    Thought: Do I need to use a tool? Yes. The user has described their symptoms.
+    Action: The action to take, which should be one of [{tool_names}]
+    Action Input: The user's original, natural language description of their symptoms.
+    Observation: The result of the action.
+
+    After using the tool and getting an observation, you will have the final answer.
+    CRITICAL: ALWAYS end your final answer by advising the user to consult a professional doctor for a real diagnosis.
+
+    Begin!
+
+    User's message: {input}
+    Thought:{agent_scratchpad}
     """
 )
+
 agent = create_react_agent(llm, tools, agent_prompt)
 agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
