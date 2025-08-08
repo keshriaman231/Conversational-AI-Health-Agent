@@ -139,7 +139,8 @@ from langchain_core.prompts import PromptTemplate
 
 # --- 1. SET YOUR GOOGLE API KEY FROM STREAMLIT SECRETS ---
 # The app will now securely get the key from the Secrets you just set.
-os.environ["GOOGLE_API_KEY"] = st.secrets["AIzaSyBNyAdwvlPq2D8fvHGA-r3n3a8qGBEB4iM"]
+# os.environ["GOOGLE_API_KEY"] = st.secrets["AIzaSyBNyAdwvlPq2D8fvHGA-r3n3a8qGBEB4iM"]
+os.environ["GOOGLE_API_KEY"] = st.secrets["GOOGLE_API_KEY"]
 
 # --- 2. LOAD ALL ML MODELS (MOVED FROM FLASK) ---
 # This function loads your Keras model and preprocessors.
