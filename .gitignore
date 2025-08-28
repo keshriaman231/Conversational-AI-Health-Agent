@@ -17,3 +17,6 @@ venv/
 instance/
 .env
 *.sqlite
+
+# Ignore Streamlit secrets file
+.streamlit/secrets.toml
