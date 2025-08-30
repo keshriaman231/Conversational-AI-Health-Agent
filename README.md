@@ -45,7 +45,7 @@ The **Conversational AI Health Agent** is a web-based intelligent system that le
 
 ## Flow Diagram 
 
-![Conversational AI Health Agent Architecture](./conversational_ai_health_agent_architecture.png)
+![Conversational AI Health Agent Architecture](Conversational_AI_Health_Agent_Architecture.png)
 
 
 📌 Workflow Explanation
